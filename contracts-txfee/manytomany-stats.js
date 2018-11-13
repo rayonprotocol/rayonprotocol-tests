@@ -133,36 +133,37 @@ const exec = async () => {
     // Student - add
     var studentIds = [];
     for (i = 0; i < studentNum; i++) {
+        // const studentName = randomString({ length: 10 + Math.floor(Math.random() * 10) });
+        const studentName = 'student' + i;
         const studentId = web3_eth.accounts.create().address;
-        const name = randomString({ length: 10 + Math.floor(Math.random() * 10) });
 
-        receipt = await studentContract.methods.add(studentId, name).send({ from: admin });
-        printReceipt("Student", "add", admin, studentId + ',' + name, receipt);
+        receipt = await studentContract.methods.add(studentId, studentName).send({ from: admin });
+        printReceipt("Student", "add", admin, studentId + ',' + studentName, receipt);
         studentIds.push(studentId);
     }
     // Course - add
     var courseIds = [];
     for (i = 0; i < courseNum; i++) {
-        const courseId = web3.utils.fromAscii('courseId' + i);
-        const courseName = randomString({ length: 10 + Math.floor(Math.random() * 10) });
+        // const courseName = randomString({ length: 10 + Math.floor(Math.random() * 10) });
+        const courseName = 'course' + i;
+        const courseId = web3.utils.sha3(courseName);
         const teacherId = web3_eth.accounts.create().address;
-        const bookName = randomString({ length: 5 + Math.floor(Math.random() * 5) });
+        // const bookName = randomString({ length: 5 + Math.floor(Math.random() * 5) });
+        const bookName = 'book' + i;
 
         receipt = await courseContract.methods.add(courseId, courseName, teacherId, bookName).send({ from: admin });
-        printReceipt("Course", "add", admin, courseName + ',' + '...' + ',' + teacherId + ',' + bookName, receipt);
+        printReceipt("Course", "add", admin, web3.utils.bytesToHex(courseId) + ',' + courseName + ',' + teacherId + ',' + bookName, receipt);
         courseIds.push(courseId);
     }
     // StudentCourse - connect
     for (i = 0; i < studentIds.length; i++) {
         const studentId = studentIds[i];
         let courseIndex = 0;
-        while (courseIndex < courseIds.length - 1) {
-            const courseId = courseIds[courseIndex];
+        for (j = 0; j < courseIds.length; j++) {
+            const courseId = courseIds[j];
 
             receipt = await studentCourseContract.methods.connect(studentId, courseId).send({ from: admin });
-            printReceipt("StudentCourse", "connect", admin, studentId + ',' + courseIndex, receipt);
-
-            courseIndex += (1 + Math.floor(Math.random() * courseNum / 3));
+            printReceipt("StudentCourse", "connect", admin, studentId + ',' + web3.utils.bytesToHex(courseId), receipt);
         }
     }
     // StudentCourse - disconnect
@@ -170,10 +171,12 @@ const exec = async () => {
         const studentId = studentIds[i];
         const studentCourseCount = await studentCourseContract.methods.getConnectedCourseCount(studentId).call({ from: admin });
         for (j = 0; j < studentCourseCount; j++) {
-            const courseId = await studentCourseContract.methods.getConnectedCourseId(studentId, j).call({ from: admin });
+            // const courseId = await studentCourseContract.methods.getConnectedCourseId(studentId, j).call({ from: admin });
+            const courseName = 'course' + j;
+            const courseId = web3.utils.sha3(courseName);
 
             receipt = await studentCourseContract.methods.disconnect(studentId, courseId).send({ from: admin });
-            printReceipt("StudentCourse", "disconnect", admin, studentId + ',' + j, receipt);
+            printReceipt("StudentCourse", "disconnect", admin, studentId + ',' + web3.utils.bytesToHex(courseId), receipt);
         }
     }
     // Student - remove
@@ -188,7 +191,7 @@ const exec = async () => {
         const courseId = courseIds[i];
 
         receipt = await courseContract.methods.remove(courseId).send({ from: admin });
-        printReceipt("Course", "remove", admin, courseId, receipt);
+        printReceipt("Course", "remove", admin, web3.utils.bytesToHex(courseId), receipt);
     }
 
 
