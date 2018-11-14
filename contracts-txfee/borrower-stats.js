@@ -58,7 +58,7 @@ function logContractBuild(contractBuildJson) {
     console.log('abi:' + contractBuildJson.abi);
 }
 
-const deployContract = async (buildFilePath, sender) => {
+const deployContract = async (buildFilePath, args, sender) => {
     const contractBuildJson = require(buildFilePath);
     // logContractBuild(contractBuildJson);
 
@@ -68,10 +68,8 @@ const deployContract = async (buildFilePath, sender) => {
 
     const deployMethod = contract.deploy({
         data: contractBuildJson.bytecode,
-        arguments: [1]
+        arguments: args
     });
-
-    // console.log('estimatedGas: ' + await deployMethod.estimateGas());    // estimate gas
 
     // deploy contract
     var receipt;
@@ -82,6 +80,7 @@ const deployContract = async (buildFilePath, sender) => {
     contract.options.address = receipt.contractAddress;
     return [contract, receipt];
 }
+
 const createContract = async (buildFilePath, contractAddress) => {
     const contractBuildJson = require(buildFilePath);
 
@@ -110,15 +109,15 @@ const exec = async () => {
 
     // deploy contracts
     // BorrowerApp
-    var [borrowerAppContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/BorrowerApp.json", admin);
+    var [borrowerAppContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/BorrowerApp.json", [1], admin);
     printReceipt("BorrowerApp", "new", admin, '', receipt);
     // Borrower
-    var [borrowerContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/Borrower.json", admin);
+    var [borrowerContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/Borrower.json", [1], admin);
     printReceipt("Borrower", "new", admin, '', receipt);
     receipt = await borrowerContract.methods.setBorrowerAppContractAddress(borrowerAppContract.options.address).send({ from: admin });
     printReceipt("Borrower", "setBorrowerAppContractAddress", admin, borrowerAppContract.options.address, receipt);
     // BorrowerMember
-    var [borrowerMemberContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/BorrowerMember.json", admin);
+    var [borrowerMemberContract, receipt] = await deployContract("../../rayonprotocol-contract-borrower/build/contracts/BorrowerMember.json", [1], admin);
     printReceipt("BorrowerMember", "new", admin, '', receipt);
     receipt = await borrowerMemberContract.methods.setBorrowerAppContractAddress(borrowerAppContract.options.address).send({ from: admin });
     printReceipt("BorrowerMember", "setBorrowerAppContractAddress", admin, borrowerAppContract.options.address, receipt);

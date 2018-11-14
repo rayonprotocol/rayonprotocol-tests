@@ -112,6 +112,8 @@ const exec = async () => {
     const accounts = await web3_eth.getAccounts();
     const account = accounts[0];
 
+    var [studentProxy, receipt] = await deployContract("../../solidity-upgradable-contracts/build/contracts/Proxy.json", ['0xCF1d1aCA6599f3c7abf1eBF80B1D84Ac95D98f5E'], account);
+
     // deploy contracts
     // ScoreV1
     var [scoreV1Contract, receipt] = await deployContract("../../solidity-upgradable-contracts/build/contracts/ScoreV1.json", [], account);

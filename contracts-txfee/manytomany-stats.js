@@ -62,7 +62,7 @@ function logContractBuild(contractBuildJson) {
     console.log('abi:' + contractBuildJson.abi);
 }
 
-const deployContract = async (buildFilePath, sender) => {
+const deployContract = async (buildFilePath, args, sender) => {
     const contractBuildJson = require(buildFilePath);
     // logContractBuild(contractBuildJson);
 
@@ -72,7 +72,7 @@ const deployContract = async (buildFilePath, sender) => {
 
     const deployMethod = contract.deploy({
         data: contractBuildJson.bytecode,
-        arguments: [1]
+        arguments: args
     });
 
     // deploy contract
@@ -84,6 +84,7 @@ const deployContract = async (buildFilePath, sender) => {
     contract.options.address = receipt.contractAddress;
     return [contract, receipt];
 }
+
 const createContract = async (buildFilePath, contractAddress) => {
     const contractBuildJson = require(buildFilePath);
 
@@ -109,27 +110,12 @@ const printReceipt = (contractName, method, sender, args, receipt) => {
 
 // main test
 var randomString = require('random-string')
-const exec = async () => {
-    // account list
-    const accounts = await web3_eth.getAccounts();
-    const admin = accounts[0];
-    // console.log(accounts);
 
-    // deploy contracts
-    // Student
-    var [studentContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/Student.json", admin);
-    printReceipt("Student", "new", admin, '', receipt);
-    // Course
-    var [courseContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/Course.json", admin);
-    printReceipt("Course", "new", admin, '', receipt);
-    // StudentCourse
-    var [studentCourseContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/StudentCourse.json", admin);
-    printReceipt("StudentCourse", "new", admin, '', receipt);
-
-    const studentNum = 10;
-    const courseNum = 30;
-    // const studentNum = 2;
-    // const courseNum = 6;
+const runTest = async (admin, studentContract, courseContract, studentCourseContract) => {
+    // const studentNum = 10;
+    // const courseNum = 30;
+    const studentNum = 2;
+    const courseNum = 3;
     // Student - add
     var studentIds = [];
     for (i = 0; i < studentNum; i++) {
@@ -152,7 +138,7 @@ const exec = async () => {
         const bookName = 'book' + i;
 
         receipt = await courseContract.methods.add(courseId, courseName, teacherId, bookName).send({ from: admin });
-        printReceipt("Course", "add", admin, web3.utils.bytesToHex(courseId) + ',' + courseName + ',' + teacherId + ',' + bookName, receipt);
+        printReceipt("Course", "add", admin, i + ',' + courseName + ',' + teacherId + ',' + bookName, receipt);
         courseIds.push(courseId);
     }
     // StudentCourse - connect
@@ -163,7 +149,7 @@ const exec = async () => {
             const courseId = courseIds[j];
 
             receipt = await studentCourseContract.methods.connect(studentId, courseId).send({ from: admin });
-            printReceipt("StudentCourse", "connect", admin, studentId + ',' + web3.utils.bytesToHex(courseId), receipt);
+            printReceipt("StudentCourse", "connect", admin, studentId + ',' + j, receipt);
         }
     }
     // StudentCourse - disconnect
@@ -176,7 +162,7 @@ const exec = async () => {
             const courseId = web3.utils.sha3(courseName);
 
             receipt = await studentCourseContract.methods.disconnect(studentId, courseId).send({ from: admin });
-            printReceipt("StudentCourse", "disconnect", admin, studentId + ',' + web3.utils.bytesToHex(courseId), receipt);
+            printReceipt("StudentCourse", "disconnect", admin, studentId + ',' + j, receipt);
         }
     }
     // Student - remove
@@ -191,8 +177,45 @@ const exec = async () => {
         const courseId = courseIds[i];
 
         receipt = await courseContract.methods.remove(courseId).send({ from: admin });
-        printReceipt("Course", "remove", admin, web3.utils.bytesToHex(courseId), receipt);
+        printReceipt("Course", "remove", admin, i, receipt);
     }
+}
+const exec = async () => {
+    // account list
+    const accounts = await web3_eth.getAccounts();
+    const admin = accounts[0];
+    // console.log(accounts);
+
+    // deploy contracts
+    // Student
+    var [studentContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/Student.json", [], admin);
+    printReceipt("Student", "new", admin, '', receipt);
+    // Course
+    var [courseContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/Course.json", [], admin);
+    printReceipt("Course", "new", admin, '', receipt);
+    // StudentCourse
+    var [studentCourseContract, receipt] = await deployContract("../../solidity-many-to-many-relationship/build/contracts/StudentCourse.json", [], admin);
+    printReceipt("StudentCourse", "new", admin, '', receipt);
+
+    // test1 - contracts
+    await runTest(admin, studentContract, courseContract, studentCourseContract);
+
+    // deploy proxy contracts & create interface contracts
+    // proxy for Student
+    var [studentProxy, receipt] = await deployContract("../../solidity-upgradable-contracts/build/contracts/Proxy.json", [studentContract.options.address], admin);
+    printReceipt("StudentProxy", "new", admin, studentContract.options.address, receipt);
+    var studentInterface = await createContract("../../solidity-many-to-many-relationship/build/contracts/Student.json", studentProxy.options.address);
+    // proxy for Course
+    var [courseProxy, receipt] = await deployContract("../../solidity-upgradable-contracts/build/contracts/Proxy.json", [courseContract.options.address], admin);
+    printReceipt("CourseProxy", "new", admin, courseContract.options.address, receipt);
+    var courseInterface = await createContract("../../solidity-many-to-many-relationship/build/contracts/Course.json", courseProxy.options.address);
+    // proxy for StudentCourse
+    var [studentCourseProxy, receipt] = await deployContract("../../solidity-upgradable-contracts/build/contracts/Proxy.json", [studentCourseContract.options.address], admin);
+    printReceipt("StudentCourseProxy", "new", admin, studentCourseContract.options.address, receipt);
+    var studentCourseInterface = await createContract("../../solidity-many-to-many-relationship/build/contracts/StudentCourse.json", studentCourseProxy.options.address);
+
+    // test2 - proxy interfaces
+    await runTest(admin, studentInterface, courseInterface, studentCourseInterface);
 
 
     // exit
