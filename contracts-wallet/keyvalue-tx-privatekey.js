@@ -53,15 +53,21 @@ var gasLimit = networks[networkName].gas;
 
 
 // functions
-const deployContract = async (buildFilePath, sender, privateKey) => {
+const deployContract = async (buildFilePath, args, sender, privateKey) => {
     const contractBuildJson = require(buildFilePath);
+    const contract = new web3_eth.Contract(contractBuildJson.abi);
+    const code = contract.deploy({
+        data: contractBuildJson.bytecode,
+        arguments: args
+    }).encodeABI();
+
     var rawTx = {
         nonce: web3.utils.numberToHex(await web3_eth.getTransactionCount(sender)),
         gasPrice: web3.utils.numberToHex(gasPrice),
         gasLimit: web3.utils.numberToHex(gasLimit),
         from: sender,
         value: web3.utils.numberToHex('0'),
-        data: contractBuildJson.bytecode
+        data: code
     }
     var tx = new Tx(rawTx);
     tx.sign(Buffer.from(privateKey, 'hex'));
@@ -146,7 +152,7 @@ const printReceipt = (contractName, method, sender, args, receipt) => {
 }
 
 const exec = async () => {
-    var [contractAddress, receipt] = await deployContract('../build/contracts/KeyValue.json', address, privateKey);
+    var [contractAddress, receipt] = await deployContract('../build/contracts/KeyValue.json', [], address, privateKey);
     printReceipt("KeyValue", "new", address, '', receipt);
     // console.log(receipt);
 
