@@ -22,11 +22,11 @@ caver.klay.getTransactionCount(fromAddress).then(nonce => {
         gasLimit: caver.utils.toHex('20000000'),
         from: fromAddress,
         to: toAddress,
-        value: caver.utils.toHex(caver.utils.toPeb('100', 'KLAY')),
+        value: caver.utils.toHex(caver.utils.toPeb('1', 'KLAY')),
     }
 
     var tx = new Tx(rawTx);
-    tx.sign(new Buffer(privateKey, 'hex'));
+    tx.sign(new Buffer.from(privateKey, 'hex'));
 
     var serializedTx = tx.serialize();
     caver.klay.sendSignedTransaction('0x' + serializedTx.toString('hex'))
