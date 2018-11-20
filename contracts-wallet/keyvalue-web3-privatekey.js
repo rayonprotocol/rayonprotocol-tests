@@ -3,8 +3,8 @@ const Caver = require('caver-js');
 const console = require('console');
 
 // Provider
-const privateKey = '0x98dc373cffe2af3933f55a0628764be123951ee61764af59b1147e81e7b281d6';
-const address = '0x1E970Fd741d0F0f2c26FF472772910042D871CEb';
+const privateKey = '98d88baf868ed7f5b65e37753ef58b33119447ef56f1adc6b73127bd2bcaa219';
+const address = '0x546352e8e80cd7aE489Ae8F6FFf088e4035446c5';
 networks = {
     local: {
         url: 'http://localhost:8545',
@@ -31,14 +31,15 @@ const networkName = process.argv[2];
 var web3;
 var web3_eth;
 switch (networkName) {
-    // case 'local':
-    //     web3 = new Web3(networks[networkName].url);
-    //     web3_eth = web3.eth;
-    //     break;
-    // case 'ropsten':
-    //     web3 = new Web3(networks[networkName].url);
-    //     web3_eth = web3.eth;
-    //     break;
+    case 'local':
+        web3 = new Web3(networks[networkName].url);
+        web3_eth = web3.eth;
+        web3_eth.accounts.wallet.add('0x' + privateKey);
+        break;
+    case 'ropsten':
+        web3 = new Web3(networks[networkName].url);
+        web3_eth = web3.eth;
+        break;
     case 'klaytn':
         web3 = new Caver(networks[networkName].url);
         web3_eth = web3.klay;
@@ -129,9 +130,10 @@ const runTest = async (admin, keyValueContract) => {
 
 const exec = async () => {
     // account list
-    web3_eth.accounts.wallet.add(privateKey);
+    web3_eth.accounts.wallet.add('0x' + privateKey);
     const admin = web3_eth.accounts.wallet[0].address;
     // console.log(web3_eth.accounts.wallet);
+    // console.log(admin);
 
     // deploy contracts
     // KeyValue
