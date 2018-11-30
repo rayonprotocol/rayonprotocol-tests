@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "caver-js": "0.0.1-f",
+    "caver-js": "0.0.1-r",
     "console": "^0.7.2",
     "ethereumjs-tx": "^1.3.7",
     "openzeppelin-solidity": "^1.12.0",
